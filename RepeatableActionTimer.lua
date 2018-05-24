@@ -10,6 +10,7 @@ RepeatableActionTimer.defaults = {
     ShadowySupplier = true
 }
 RepeatableActionTimer.timers = {}
+RepeatableActionTimer.GUI = nil
 
 ---------------------
 --  OnAddOnLoaded  --
@@ -33,16 +34,22 @@ function RepeatableActionTimer:Initialize(self)
     self:BuildTimers(self)
 
     -- Register our keybinding names
-    ZO_CreateStringId("SI_BINDING_NAME_ACTION_TIMER_TOGGLE", "Toggle Window Visibility")
+    --ZO_CreateStringId("SI_BINDING_NAME_ACTION_TIMER_TOGGLE", "Toggle Window Visibility")
+    ZO_CreateStringId("SI_BINDING_NAME_ACTION_TIMER_TOGGLE", "Display Cooldowns")
 
-    -- Regular Hooks
-    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_NEW_MOVEMENT_IN_UI_MODE, self.OnPlayerMove)
-    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_QUEST_REMOVED, self.OnQuestRemoved)
-    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_RETICLE_HIDDEN_UPDATE, self.OnReticleHidden)
+    -- System Hooks
+    --SM:RegisterTopLevel(RepeatableActionTimer_GUI, false)
 
-    -- Interaction Hooks
-    self:OverwritePopulateChatterOption(self, GAMEPAD_INTERACTION)
-    self:OverwritePopulateChatterOption(self, INTERACTION) -- keyboard
+    -- Event Hooks
+    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_NEW_MOVEMENT_IN_UI_MODE, function (...)
+      return self:OnPlayerMove(self, ...)
+    end)
+    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_QUEST_REMOVED, function (...)
+      return self:OnQuestRemoved(self, ...)
+    end)
+    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_RETICLE_HIDDEN_UPDATE, function (...)
+      return self:OnReticleHidden(self, ...)
+    end)
 
     -- Release Hooks
     EVENT_MANAGER:UnregisterForEvent(self.name, EVENT_ADD_ON_LOADED)
@@ -75,15 +82,19 @@ function RepeatableActionTimer:RepairSaveData(self)
     end
 end
 
-------------------
--- System Hooks --
-------------------
+function RepeatableActionTimer:Clock(self, seconds)
+  local seconds = tonumber(seconds)
 
-local lastInteractableName
-ZO_PreHook(FISHING_MANAGER, "StartInteraction", function()
-    local _, name = GetGameCameraInteractableActionInfo()
-    lastInteractableName = name
-end)
+  if seconds <= 0 then
+    return "00:00:00"
+  else
+    days = math.floor(seconds / 86400)
+    hours = math.floor(seconds / 3600 - (days * 86400))
+    mins = math.floor(seconds / 60 - (days * 86400) - (hours * 60))
+    secs = math.floor(seconds - (days * 86400) - (hours * 3600) - (mins * 60))
+    return days > 0 and string.format("%02.fd %02.fh %02.fm %02.fs", days, hours, mins, secs) or string.format("%02.fh %02.fm %02.fs", hours, mins, secs)
+  end
+end
 
 ----------
 -- Data --
@@ -107,7 +118,7 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
         name = "Action Timer",
         displayName = "Repeatable Action Timer",
         author = "Positron",
-        version = "1.0",
+        version = "0.1",
         website = "https://github.com/alexgurrola/RepeatableActionTimer",
         slashCommand = "/actiontimer",
         registerForDefaults = true,
@@ -173,63 +184,42 @@ end
 -- UI/UX Actions --
 -------------------
 
+function RepeatableActionTimer:Redraw(self)
+    --d('Redraw!')
+end
+
 function RepeatableActionTimer:ToggleWindow(self)
-    d('Window Toggled!')
+    --d('Window Toggled:', self.GUI, RepeatableActionTimer_GUI)
+    d('Shadowy Supplier: ' .. self:Clock(self, GetTimeToShadowyConnectionsResetInSeconds()) .. ' remaining.')
+    d('Stables: ' .. ZO_FormatTimeMilliseconds(GetTimeUntilCanBeTrained(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. ' remaining.')
+    self.active = not self.active
+  	if (self.active) then
+      self:Redraw(self)
+    end
+  	--RepeatableActionTimer_GUI:SetHidden(not self.active)
 end
 
 --------------------
 -- Event Handlers --
 --------------------
 
-function RepeatableActionTimer.OnReticleHidden(eventCode, retHidden)
+function RepeatableActionTimer:OnReticleHidden(self, eventCode, retHidden)
   	-- possibly needed for window workflow
-    --d('Reticle Hidden!')
 end
 
-function RepeatableActionTimer.OnPlayerMove(eventCode)
+function RepeatableActionTimer:OnPlayerMove(self, eventCode)
   	-- close window if open
-    d('Player Moved!')
 end
 
-function RepeatableActionTimer.OnQuestRemoved(eventCode, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questID)
+function RepeatableActionTimer:OnQuestRemoved(self, eventCode, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questID)
   	local charId = GCCId()
-    d('GCCID:', charId)
-    d('QuestID:', questID)
-    d('Completed:', isCompleted)
+    --d('GCCID:', charId)
+    --d('QuestID:', questID)
+    --d('Completed:', isCompleted)
 end
 
-function RepeatableActionTimer.OnUpdate()
-  	d('Updated!')
-end
-
----------------------
--- Event Overrides --
----------------------
-
--- override the chatter option function, so we have a location to check access
-function RepeatableActionTimer:OverwritePopulateChatterOption(self, interaction)
-    local _self = self
-    local PopulateChatterOption = interaction.PopulateChatterOption
-    interaction.PopulateChatterOption = function(self, index, fun, txt, type, ...)
-        -- check if the current target actor is on a timer
-        if not _self.timers.actors[lastInteractableName] then
-            PopulateChatterOption(self, index, fun, txt, type, ...)
-            return
-        end
-        -- gather data
-        local offerText = GetOfferedQuestInfo()
-        if (string.len(offerText) > 0) then
-            d('Quest:', offerText)
-        end
-        local farewellText = GetChatterFarewell()
-        if (string.len(offerText) > 0) then
-            d('Farewell:', farewellText)
-        end
-        d('Zone:', GetZoneId(GetUnitZoneIndex("player")))
-        -- continue
-        PopulateChatterOption(self, index, fun, txt, type, ...)
-        lastInteractableName = nil -- set this variable to nil, so the next dialog step isn't manipulated
-    end
+function RepeatableActionTimer:OnUpdate(self)
+  	--d('Updated!')
 end
 
 ----------------------

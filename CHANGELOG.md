@@ -6,10 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.1]
+
 ### Added
+
+- Initial Timers
 - Settings Panel
 - Key Bindings
 - Donation Button
 - Basic Hooks
 
 [Unreleased]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
+[0.1]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
