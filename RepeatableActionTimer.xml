@@ -11,9 +11,13 @@
 					<Dimensions x="210" y="24" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0"/>
 				</Label>
-				<Label name="$(parent)_TimeFoo" font="ZoFontChat" wrapMode="ELLIPSIS" horizontalAlignment="CENTER" verticalAlignment="CENTER">
+				<Label name="$(parent)_TimeStables" font="ZoFontChat" wrapMode="ELLIPSIS" horizontalAlignment="CENTER" verticalAlignment="CENTER">
 					<Dimensions x="135" y="24" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)_Name" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+				</Label>
+				<Label name="$(parent)_TimeShadowySupplier" font="ZoFontChat" wrapMode="ELLIPSIS" horizontalAlignment="CENTER" verticalAlignment="CENTER">
+					<Dimensions x="135" y="24" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)_TimeStables" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
 				</Label>
 			</Controls>
 		</Control>
@@ -36,16 +40,20 @@
 							<Dimensions x="210" y="24"/>
 							<Anchor point="TOPLEFT" relativeTo="$(parent)_Title" relativePoint="BOTTOMLEFT" offsetX="-12" offsetY="0"/>
 						</Label>
-						<Label name="$(parent)_HeaderFoo" mouseEnabled="true" font="$(CHAT_FONT)|14" wrapMode="ELLIPSIS" text="Foo Test" horizontalAlignment="CENTER" verticalAlignment="BOTTOM">
+						<Label name="$(parent)_HeaderStables" mouseEnabled="true" font="$(CHAT_FONT)|14" wrapMode="ELLIPSIS" text="Stables" horizontalAlignment="CENTER" verticalAlignment="BOTTOM">
 							<Dimensions x="135" y="24"/>
 							<Anchor point="TOPLEFT" relativeTo="$(parent)_HeaderName" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+						</Label>
+						<Label name="$(parent)_HeaderShadowySupplier" mouseEnabled="true" font="$(CHAT_FONT)|14" wrapMode="ELLIPSIS" text="Shadowy Supplier" horizontalAlignment="CENTER" verticalAlignment="BOTTOM">
+							<Dimensions x="135" y="24"/>
+							<Anchor point="TOPLEFT" relativeTo="$(parent)_HeaderStables" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
 						</Label>
 					</Controls>
 				</Control>
 				<Control name="$(parent)_ListHolder">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="66" />
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="0" offsetY="0" />
-					<OnUpdate>RepeatableActionTimer.OnUpdate()</OnUpdate>
+					<OnUpdate>RepeatableActionTimer:OnUpdate(RepeatableActionTimer)</OnUpdate>
 				</Control>
 			</Controls>
 		</TopLevelControl>
