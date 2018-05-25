@@ -25,7 +25,7 @@
 			<Dimensions x="1179" y="78"/>
 			<Anchor point="CENTER" relativeTo="GuiRoot" relativePoint="CENTER" offsetX="0" offsetY="0" />
 			<Controls>
-				<Backdrop name="$(parent)_BG" inherits="ZO_DefaultBackdrop"></Backdrop>
+                <Backdrop name="$(parent)_BG" inherits="ZO_DefaultBackdrop"/>
 				<Control name="$(parent)_Header" mouseEnabled="true" movable="true" hidden="false" resizeToFitDescendents="true">
 					<Dimensions y="54"/>
 					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="12" offsetY="6"/>

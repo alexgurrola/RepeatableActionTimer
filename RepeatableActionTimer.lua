@@ -10,8 +10,16 @@ RepeatableActionTimer.defaults = {
     ShadowySupplier = true,
     Stables = true
 }
+RepeatableActionTimer.system = {
+    CharTotal = GetNumCharacters(),
+    CharID = GetCurrentCharacterId(),
+    Chars = {}
+}
 RepeatableActionTimer.timers = {}
-RepeatableActionTimer.GUI = nil
+RepeatableActionTimer.GUI = {
+    ListHolder = nil,
+    TopLevel = nil
+}
 
 ---------------------
 --  OnAddOnLoaded  --
@@ -34,30 +42,40 @@ function RepeatableActionTimer:Initialize(self)
     self:CreateSettingsWindow(self)
     self:BuildTimers(self)
 
-    self.TotalChars = 1
+    -- Get Character Names
+    for i = 1, self.system.CharTotal do
+        local name, _, _, _, _, _, characterId = GetCharacterInfo(i)
+        if self.system.Chars[characterId] == nil then
+            --Strip the grammar markup
+            self.system.Chars[characterId] = zo_strformat("<<1>>", name)
+        end
+    end
 
-    -- Register our keybinding names
+    d('System:', self.system)
+
+    -- Register Key Bind Names
     ZO_CreateStringId("SI_BINDING_NAME_ACTION_TIMER_TOGGLE", "Toggle Window Visibility")
     --ZO_CreateStringId("SI_BINDING_NAME_ACTION_TIMER_TOGGLE", "Display Cooldowns")
 
     -- System Hooks
     if (RepeatableActionTimer_GUI ~= nil) then
-      SCENE_MANAGER:RegisterTopLevel(RepeatableActionTimer_GUI, false)
-      self.GUI = RepeatableActionTimer_GUI
-      self:CreateListHolder(self)
+        SCENE_MANAGER:RegisterTopLevel(RepeatableActionTimer_GUI, false)
+        self.GUI.TopLevel = RepeatableActionTimer_GUI
+        self.GUI.ListHolder = RepeatableActionTimer_GUI_ListHolder
+        self:CreateListHolder(self)
     else
-      d('Unable to initialize Action Timer GUI!')
+        d('Unable to initialize Action Timer GUI!')
     end
 
     -- Event Hooks
-    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_NEW_MOVEMENT_IN_UI_MODE, function (...)
-      return self:OnPlayerMove(self, ...)
+    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_NEW_MOVEMENT_IN_UI_MODE, function(...)
+        return self:OnPlayerMove(self, ...)
     end)
-    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_QUEST_REMOVED, function (...)
-      return self:OnQuestRemoved(self, ...)
+    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_QUEST_REMOVED, function(...)
+        return self:OnQuestRemoved(self, ...)
     end)
-    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_RETICLE_HIDDEN_UPDATE, function (...)
-      return self:OnReticleHidden(self, ...)
+    EVENT_MANAGER:RegisterForEvent(self.name, EVENT_RETICLE_HIDDEN_UPDATE, function(...)
+        return self:OnReticleHidden(self, ...)
     end)
 
     -- Release Hooks
@@ -210,78 +228,79 @@ end
 -------------------
 
 function RepeatableActionTimer:CreateLine(self, i, predecessor, parent)
-	local row = CreateControlFromVirtual("RepeatableActionTimer_Row_", parent, "RepeatableActionTimer_SlotTemplate", i)
-  local listHolder = RepeatableActionTimer_GUI_ListHolder
+    local row = CreateControlFromVirtual("RepeatableActionTimer_Row_", parent, "RepeatableActionTimer_SlotTemplate", i)
 
-	row.Name = row:GetNamedChild("_Name")
-	row.Stables = row:GetNamedChild("_Stables")
-	row.ShadowySupplier = row:GetNamedChild("_ShadowySupplier")
+    row.Name = row:GetNamedChild("_Name")
+    row.Stables = row:GetNamedChild("_Stables")
+    row.ShadowySupplier = row:GetNamedChild("_ShadowySupplier")
 
-	row:SetHidden(false)
-	row:SetMouseEnabled(true)
-	row:SetHeight("24")
+    row:SetHidden(false)
+    row:SetMouseEnabled(true)
+    row:SetHeight("24")
 
-	if i == 1 then
-		row:SetAnchor(TOPLEFT, listHolder, TOPLEFT, 0, 0)
-		row:SetAnchor(TOPRIGHT, listHolder, TOPRIGHT, 0, 0)
-	else
-		row:SetAnchor(TOPLEFT, predecessor, BOTTOMLEFT, 0, listHolder.rowHeight)
-		row:SetAnchor(TOPRIGHT, predecessor, BOTTOMRIGHT, 0, listHolder.rowHeight)
-	end
-	row:SetParent(listHolder)
-	return row
+    if i == 1 then
+        row:SetAnchor(TOPLEFT, self.GUI.ListHolder, TOPLEFT, 0, 0)
+        row:SetAnchor(TOPRIGHT, self.GUI.ListHolder, TOPRIGHT, 0, 0)
+    else
+        row:SetAnchor(TOPLEFT, predecessor, BOTTOMLEFT, 0, self.GUI.ListHolder.rowHeight)
+        row:SetAnchor(TOPRIGHT, predecessor, BOTTOMRIGHT, 0, self.GUI.ListHolder.rowHeight)
+    end
+
+    row:SetParent(self.GUI.ListHolder)
+
+    return row
 end
 
 function RepeatableActionTimer:FillLine(self, line, item)
-	line.Name:SetText(item == nil and "-" or item.Name)
-	line.Stables:SetText(item == nil and "-" or item.Stables)
-	line.ShadowySupplier:SetText(item == nil and "-" or item.ShadowySupplier)
+    line.Name:SetText(item == nil and "-" or item.Name)
+    line.Stables:SetText(item == nil and "-" or item.Stables)
+    line.ShadowySupplier:SetText(item == nil and "-" or item.ShadowySupplier)
 end
 
 function RepeatableActionTimer:InitializeTimeLines(self)
-  local listHolder = RepeatableActionTimer_GUI_ListHolder
-	for i = 1, self.TotalChars do
-    self:FillLine(self, listHolder.lines[i], listHolder.dataLines[i])
-	end
+    for i = 1, self.system.CharTotal do
+        self:FillLine(self, self.GUI.ListHolder.lines[i], self.GUI.ListHolder.dataLines[i])
+    end
 end
 
 function RepeatableActionTimer:CreateListHolder(self)
-  local listHolder = RepeatableActionTimer_GUI_ListHolder
-	listHolder.dataLines = {}
-	listHolder.lines = {}
-	local predecessor = nil
-	for i=1, self.TotalChars do
-		listHolder.lines[i] = self:CreateLine(self, i, predecessor, listHolder)
-		predecessor = listHolder.lines[i]
-	end
-	self:Redraw(self)
+    self.GUI.ListHolder.dataLines = {}
+    self.GUI.ListHolder.lines = {}
+    local predecessor
+    for i = 1, self.system.CharTotal do
+        self.GUI.ListHolder.lines[i] = self:CreateLine(self, i, predecessor, self.GUI.ListHolder)
+        predecessor = self.GUI.ListHolder.lines[i]
+    end
+    self:Redraw(self)
 end
 
 function RepeatableActionTimer:Redraw(self)
-  --d('Shadowy Supplier: ' .. ZO_FormatTime(GetTimeToShadowyConnectionsResetInSeconds(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. ' remaining.')
-  --d('Stables: ' .. ZO_FormatTime(math.floor(GetTimeUntilCanBeTrained() / 1000), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. ' remaining.')
-  --d('Window Time:', GetDiffBetweenTimeStamps(GetTimeStamp(), self.TimeStamp))
-  local dataLines = {}
-	table.insert(dataLines, {
-		Name = 'me',
-		ShadowySupplier = ZO_FormatTime(GetTimeToShadowyConnectionsResetInSeconds(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR),
-		Stables = ZO_FormatTime(math.floor(GetTimeUntilCanBeTrained() / 1000), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR)
-	})
-	RepeatableActionTimer_GUI_ListHolder.dataLines = dataLines
-	RepeatableActionTimer_GUI_ListHolder:SetParent(self.GUI)
-  self:InitializeTimeLines(self)
+    --d('Shadowy Supplier: ' .. ZO_FormatTime(GetTimeToShadowyConnectionsResetInSeconds(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. ' remaining.')
+    --d('Stables: ' .. ZO_FormatTime(math.floor(GetTimeUntilCanBeTrained() / 1000), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. ' remaining.')
+    --[[
+    if self.TimeStamp == nil then
+        self.TimeStamp = GetTimeStamp()
+    end
+    d('Window Time:', GetDiffBetweenTimeStamps(GetTimeStamp(), self.TimeStamp))
+    ]]
+    local dataLines = {}
+    table.insert(dataLines, {
+        Name = 'me',
+        ShadowySupplier = ZO_FormatTime(GetTimeToShadowyConnectionsResetInSeconds(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR),
+        Stables = ZO_FormatTime(math.floor(GetTimeUntilCanBeTrained() / 1000), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR)
+    })
+    self.GUI.ListHolder.dataLines = dataLines
+    self.GUI.ListHolder:SetParent(self.GUI.TopLevel)
+    self:InitializeTimeLines(self)
 end
 
 function RepeatableActionTimer:ToggleWindow(self)
-  if self.TimeStamp == nil then
-    self.TimeStamp = GetTimeStamp()
-  end
     self.active = not self.active
-  	if (self.active) then
-      self:Redraw(self)
+    if (self.active) then
+        self:Redraw(self)
     end
-    if (self.GUI ~= nil) then
-      self.GUI:SetHidden(not self.active)
+    if (self.GUI.TopLevel ~= nil) then
+        self.GUI.TopLevel:SetHidden(not self.active)
     end
 end
 
@@ -290,15 +309,15 @@ end
 --------------------
 
 function RepeatableActionTimer:OnReticleHidden(self, eventCode, retHidden)
-    if (self.GUI ~= nil) then
-      self.GUI:SetHidden(not (self.active and not retHidden))
+    if (self.GUI.TopLevel ~= nil) then
+        self.GUI.TopLevel:SetHidden(not (self.active and not retHidden))
     end
 end
 
 function RepeatableActionTimer:OnPlayerMove(self, eventCode)
-  	-- close window if open
+    -- close window if open
     if (self.active) then
-      self:ToggleWindow(self)
+        self:ToggleWindow(self)
     end
 end
 
@@ -309,7 +328,7 @@ function RepeatableActionTimer:OnQuestRemoved(self, eventCode, isCompleted, jour
 end
 
 function RepeatableActionTimer:OnUpdate(self)
-  self:Redraw(self)
+    self:Redraw(self)
 end
 
 ----------------------
