@@ -12,7 +12,8 @@ RepeatableActionTimer.defaults = {
 }
 RepeatableActionTimer.system = {
     CharTotal = GetNumCharacters(),
-    CharID = GetCurrentCharacterId(),
+    CharId = GetCurrentCharacterId(),
+    CharName = nil,
     Chars = {}
 }
 RepeatableActionTimer.timers = {}
@@ -51,7 +52,7 @@ function RepeatableActionTimer:Initialize(self)
         end
     end
 
-    d('System:', self.system)
+    self.system.CharName = self.system.Chars[self.system.CharId]
 
     -- Register Key Bind Names
     ZO_CreateStringId("SI_BINDING_NAME_ACTION_TIMER_TOGGLE", "Toggle Window Visibility")
@@ -64,7 +65,7 @@ function RepeatableActionTimer:Initialize(self)
         self.GUI.ListHolder = RepeatableActionTimer_GUI_ListHolder
         self:CreateListHolder(self)
     else
-        d('Unable to initialize Action Timer GUI!')
+        d("Unable to initialize Action Timer GUI!")
     end
 
     -- Event Hooks
@@ -231,8 +232,8 @@ function RepeatableActionTimer:CreateLine(self, i, predecessor, parent)
     local row = CreateControlFromVirtual("RepeatableActionTimer_Row_", parent, "RepeatableActionTimer_SlotTemplate", i)
 
     row.Name = row:GetNamedChild("_Name")
-    row.Stables = row:GetNamedChild("_Stables")
-    row.ShadowySupplier = row:GetNamedChild("_ShadowySupplier")
+    row.Stables = row:GetNamedChild("_TimeStables")
+    row.ShadowySupplier = row:GetNamedChild("_TimeShadowySupplier")
 
     row:SetHidden(false)
     row:SetMouseEnabled(true)
@@ -252,9 +253,9 @@ function RepeatableActionTimer:CreateLine(self, i, predecessor, parent)
 end
 
 function RepeatableActionTimer:FillLine(self, line, item)
-    line.Name:SetText(item == nil and "-" or item.Name)
-    line.Stables:SetText(item == nil and "-" or item.Stables)
-    line.ShadowySupplier:SetText(item == nil and "-" or item.ShadowySupplier)
+    line.Name:SetText(item ~= nil and item.Name or "-")
+    line.Stables:SetText(item ~= nil and item.Stables or "-")
+    line.ShadowySupplier:SetText(item ~= nil and item.ShadowySupplier or "-")
 end
 
 function RepeatableActionTimer:InitializeTimeLines(self)
@@ -275,17 +276,17 @@ function RepeatableActionTimer:CreateListHolder(self)
 end
 
 function RepeatableActionTimer:Redraw(self)
-    --d('Shadowy Supplier: ' .. ZO_FormatTime(GetTimeToShadowyConnectionsResetInSeconds(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. ' remaining.')
-    --d('Stables: ' .. ZO_FormatTime(math.floor(GetTimeUntilCanBeTrained() / 1000), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. ' remaining.')
+    --d("Shadowy Supplier: " .. ZO_FormatTime(GetTimeToShadowyConnectionsResetInSeconds(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. " remaining.")
+    --d("Stables: " .. ZO_FormatTime(math.floor(GetTimeUntilCanBeTrained() / 1000), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. " remaining.")
     --[[
     if self.TimeStamp == nil then
         self.TimeStamp = GetTimeStamp()
     end
-    d('Window Time:', GetDiffBetweenTimeStamps(GetTimeStamp(), self.TimeStamp))
+    d("Window Time:", GetDiffBetweenTimeStamps(GetTimeStamp(), self.TimeStamp))
     ]]
     local dataLines = {}
     table.insert(dataLines, {
-        Name = 'me',
+        Name = self.system.CharName,
         ShadowySupplier = ZO_FormatTime(GetTimeToShadowyConnectionsResetInSeconds(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR),
         Stables = ZO_FormatTime(math.floor(GetTimeUntilCanBeTrained() / 1000), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR)
     })
@@ -322,9 +323,9 @@ function RepeatableActionTimer:OnPlayerMove(self, eventCode)
 end
 
 function RepeatableActionTimer:OnQuestRemoved(self, eventCode, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questId)
-    --d('GCCID:', GCCId())
-    --d('QuestID:', questId)
-    --d('Completed:', isCompleted)
+    --d("GCCID:", GCCId())
+    --d("QuestID:", questId)
+    --d("Completed:", isCompleted)
 end
 
 function RepeatableActionTimer:OnUpdate(self)
