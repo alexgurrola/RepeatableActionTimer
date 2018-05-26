@@ -1,7 +1,7 @@
 ## Title: Repeatable Action Timer
 ## Description: This addon keeps track of when a repeatable action can be repeated.
 ## APIVersion: 100023
-## Version: 0.2
+## Version: 0.2.1
 ## SavedVariables: RepeatableActionTimerData
 ## Author: Positron
 ## OptionalDependsOn: LibStub LibAddonMenu-2.0

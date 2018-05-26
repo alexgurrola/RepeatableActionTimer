@@ -70,9 +70,11 @@ function RepeatableActionTimer:Initialize(self)
         return self:OnQuestRemoved(self, ...)
     end)
     ]]
+    --[[
     EVENT_MANAGER:RegisterForEvent(self.name, EVENT_RETICLE_HIDDEN_UPDATE, function(...)
         return self:OnReticleHidden(self, ...)
     end)
+    ]]
 
     -- Release Hooks
     EVENT_MANAGER:UnregisterForEvent(self.name, EVENT_ADD_ON_LOADED)
@@ -159,7 +161,7 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
         name = "Action Timer",
         displayName = "Repeatable Action Timer",
         author = "Positron",
-        version = "0.2",
+        version = "0.2.1",
         website = "https://github.com/alexgurrola/RepeatableActionTimer",
         slashCommand = "/actiontimer",
         registerForDefaults = true,
@@ -300,12 +302,7 @@ function RepeatableActionTimer:EventTime(self, timeStamp)
 end
 
 function RepeatableActionTimer:Redraw(self)
-    --[[
-    if self.TimeStamp == nil then
-        self.TimeStamp = GetTimeStamp()
-    end
-    d("Window Time:", GetDiffBetweenTimeStamps(GetTimeStamp(), self.TimeStamp))
-    ]]
+    self:UpdateCharacterTimer(self)
     local dataLines = {}
     for i = 1, self.character.total do
         local _, _, _, _, _, _, characterId = GetCharacterInfo(i)
@@ -317,7 +314,6 @@ function RepeatableActionTimer:Redraw(self)
     end
     self.GUI.listHolder.dataLines = dataLines
     self.GUI.listHolder:SetParent(self.GUI.topLevel)
-    d(dataLines)
     self:InitializeTimeLines(self)
 end
 
@@ -335,11 +331,14 @@ end
 -- Event Handlers --
 --------------------
 
+--[[
 function RepeatableActionTimer:OnReticleHidden(self, eventCode, retHidden)
     if (self.GUI.topLevel ~= nil and self.active) then
+        self.active = retHidden
         self.GUI.topLevel:SetHidden(not retHidden)
     end
 end
+]]
 
 function RepeatableActionTimer:OnPlayerMove(self, eventCode)
     -- close window if open

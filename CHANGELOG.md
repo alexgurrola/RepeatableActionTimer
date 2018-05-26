@@ -6,12 +6,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.1]
+
+### Fixed
+
+- Current Character Cooldown
+
+## [0.2.0]
+
 ### Added
 
 - Basic GUI
 - Character Tracking
 
-## [0.1]
+## [0.1.0]
 
 ### Added
 
@@ -22,4 +30,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Basic Hooks
 
 [Unreleased]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
-[0.1]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
+[0.2.1]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
+[0.2.0]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
+[0.1.0]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
