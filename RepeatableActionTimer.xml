@@ -22,7 +22,7 @@
 			</Controls>
 		</Control>
 		<TopLevelControl name="RepeatableActionTimer_GUI" mouseEnabled="true" movable="true" hidden="true">
-			<Dimensions x="1179" y="78"/>
+			<Dimensions x="512" y="78"/>
 			<Anchor point="CENTER" relativeTo="GuiRoot" relativePoint="CENTER" offsetX="0" offsetY="0" />
 			<Controls>
                 <Backdrop name="$(parent)_BG" inherits="ZO_DefaultBackdrop"/>

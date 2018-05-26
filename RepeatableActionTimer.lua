@@ -4,22 +4,23 @@
 
 RepeatableActionTimer = {}
 RepeatableActionTimer.name = "RepeatableActionTimer"
-RepeatableActionTimer.configVersion = 1
+RepeatableActionTimer.configVersion = 2
+RepeatableActionTimer.deadTime = "--h --m --s"
 RepeatableActionTimer.controls = {}
 RepeatableActionTimer.defaults = {
-    ShadowySupplier = true,
-    Stables = true
+    shadowySupplier = true,
+    stables = true,
+    timers = {}
 }
-RepeatableActionTimer.system = {
-    CharTotal = GetNumCharacters(),
-    CharId = GetCurrentCharacterId(),
-    CharName = nil,
-    Chars = {}
+RepeatableActionTimer.character = {
+    total = GetNumCharacters(),
+    id = GetCurrentCharacterId(),
+    names = {}
 }
-RepeatableActionTimer.timers = {}
 RepeatableActionTimer.GUI = {
-    ListHolder = nil,
-    TopLevel = nil
+    listHolder = nil,
+    topLevel = nil,
+    rowHeight = "24"
 }
 
 ---------------------
@@ -42,27 +43,19 @@ function RepeatableActionTimer:Initialize(self)
     self:RepairSaveData(self)
     self:CreateSettingsWindow(self)
     self:BuildTimers(self)
-
-    -- Get Character Names
-    for i = 1, self.system.CharTotal do
-        local name, _, _, _, _, _, characterId = GetCharacterInfo(i)
-        if self.system.Chars[characterId] == nil then
-            --Strip the grammar markup
-            self.system.Chars[characterId] = zo_strformat("<<1>>", name)
-        end
-    end
-
-    self.system.CharName = self.system.Chars[self.system.CharId]
+    self:UpdateCharacterTimer(self)
 
     -- Register Key Bind Names
     ZO_CreateStringId("SI_BINDING_NAME_ACTION_TIMER_TOGGLE", "Toggle Window Visibility")
-    --ZO_CreateStringId("SI_BINDING_NAME_ACTION_TIMER_TOGGLE", "Display Cooldowns")
 
     -- System Hooks
     if (RepeatableActionTimer_GUI ~= nil) then
         SCENE_MANAGER:RegisterTopLevel(RepeatableActionTimer_GUI, false)
-        self.GUI.TopLevel = RepeatableActionTimer_GUI
-        self.GUI.ListHolder = RepeatableActionTimer_GUI_ListHolder
+        self.GUI.topLevel = RepeatableActionTimer_GUI
+        self.GUI.listHolder = RepeatableActionTimer_GUI_ListHolder
+        self.GUI:ClearAnchors()
+        self.GUI:SetAnchor(CENTER, GuiRoot, CENTER, 0, 0)
+        self.GUI:SetHeight(self.GUI:GetHeight() + (self.character.total * self.rowHeight))
         self:CreateListHolder(self)
     else
         d("Unable to initialize Action Timer GUI!")
@@ -72,9 +65,11 @@ function RepeatableActionTimer:Initialize(self)
     EVENT_MANAGER:RegisterForEvent(self.name, EVENT_NEW_MOVEMENT_IN_UI_MODE, function(...)
         return self:OnPlayerMove(self, ...)
     end)
+    --[[
     EVENT_MANAGER:RegisterForEvent(self.name, EVENT_QUEST_REMOVED, function(...)
         return self:OnQuestRemoved(self, ...)
     end)
+    ]]
     EVENT_MANAGER:RegisterForEvent(self.name, EVENT_RETICLE_HIDDEN_UPDATE, function(...)
         return self:OnReticleHidden(self, ...)
     end)
@@ -132,11 +127,26 @@ end
 ----------
 
 function RepeatableActionTimer:BuildTimers(self)
-    -- localized names of the actors
-    self.timers.actors = {
-        -- Vendors
-        ["Remains-Silent"] = self.saveData.ShadowySupplier, -- Shadowy Suppliers
-    }
+    for i = 1, self.character.total do
+        local name, _, _, _, _, _, characterId = GetCharacterInfo(i)
+        -- Register Names while transversing
+        if self.character.names[characterId] == nil then
+            -- Strip the grammar markup
+            self.character.names[characterId] = zo_strformat("<<1>>", name)
+        end
+        -- Store Timers
+        if self.saveData.timers[characterId] == nil then
+            self.saveData.timers[characterId] = {
+                stables = nil,
+                shadowySupplier = nil
+            }
+        end
+    end
+end
+
+function RepeatableActionTimer:UpdateCharacterTimer(self)
+    self.saveData.timers[self.character.id].stables = GetTimeStamp() + math.floor(GetTimeUntilCanBeTrained() / 1000)
+    self.saveData.timers[self.character.id].shadowySupplier = GetTimeStamp() + GetTimeToShadowyConnectionsResetInSeconds()
 end
 
 --------------------
@@ -168,16 +178,21 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
     }
     ]]
     optionsData[#optionsData + 1] = {
+        type = "description",
+        text = "This will house settings for toggling specific timers for each character."
+    }
+    --[[
+    optionsData[#optionsData + 1] = {
         type = "checkbox",
         name = "Stables",
         tooltip = "Turn this off if you want to stop tracking Shadowy Supplier interactions.",
         requiresReload = false,
-        default = self.defaults.Stables,
+        default = self.defaults.stables,
         getFunc = function()
-            return self.saveData.Stables
+            return self.saveData.stables
         end,
         setFunc = function(newValue)
-            self.saveData.Stables = newValue
+            self.saveData.stables = newValue
         end,
     }
     optionsData[#optionsData + 1] = {
@@ -185,14 +200,15 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
         name = "Shadowy Supplier",
         tooltip = "Turn this off if you want to stop tracking Shadowy Supplier interactions.",
         requiresReload = false,
-        default = self.defaults.ShadowySupplier,
+        default = self.defaults.shadowySupplier,
         getFunc = function()
-            return self.saveData.ShadowySupplier
+            return self.saveData.shadowySupplier
         end,
         setFunc = function(newValue)
-            self.saveData.ShadowySupplier = newValue
+            self.saveData.shadowySupplier = newValue
         end,
     }
+    ]]
     -- Other Actions
     optionsData[#optionsData + 1] = {
         type = "header",
@@ -229,55 +245,61 @@ end
 -------------------
 
 function RepeatableActionTimer:CreateLine(self, i, predecessor, parent)
-    local row = CreateControlFromVirtual("RepeatableActionTimer_Row_", parent, "RepeatableActionTimer_SlotTemplate", i)
+    local row = CreateControlFromVirtual(self.name .. "_Row_", parent, self.name .. "_SlotTemplate", i)
 
-    row.Name = row:GetNamedChild("_Name")
-    row.Stables = row:GetNamedChild("_TimeStables")
-    row.ShadowySupplier = row:GetNamedChild("_TimeShadowySupplier")
+    row.name = row:GetNamedChild("_Name")
+    row.stables = row:GetNamedChild("_TimeStables")
+    row.shadowySupplier = row:GetNamedChild("_TimeShadowySupplier")
 
     row:SetHidden(false)
     row:SetMouseEnabled(true)
-    row:SetHeight("24")
+    row:SetHeight(self.GUI.rowHeight)
 
     if i == 1 then
-        row:SetAnchor(TOPLEFT, self.GUI.ListHolder, TOPLEFT, 0, 0)
-        row:SetAnchor(TOPRIGHT, self.GUI.ListHolder, TOPRIGHT, 0, 0)
+        row:SetAnchor(TOPLEFT, self.GUI.listHolder, TOPLEFT, 0, 0)
+        row:SetAnchor(TOPRIGHT, self.GUI.listHolder, TOPRIGHT, 0, 0)
     else
-        row:SetAnchor(TOPLEFT, predecessor, BOTTOMLEFT, 0, self.GUI.ListHolder.rowHeight)
-        row:SetAnchor(TOPRIGHT, predecessor, BOTTOMRIGHT, 0, self.GUI.ListHolder.rowHeight)
+        row:SetAnchor(TOPLEFT, predecessor, BOTTOMLEFT, 0, self.GUI.listHolder.rowHeight)
+        row:SetAnchor(TOPRIGHT, predecessor, BOTTOMRIGHT, 0, self.GUI.listHolder.rowHeight)
     end
 
-    row:SetParent(self.GUI.ListHolder)
+    row:SetParent(self.GUI.listHolder)
 
     return row
 end
 
 function RepeatableActionTimer:FillLine(self, line, item)
-    line.Name:SetText(item ~= nil and item.Name or "-")
-    line.Stables:SetText(item ~= nil and item.Stables or "-")
-    line.ShadowySupplier:SetText(item ~= nil and item.ShadowySupplier or "-")
+    line.name:SetText(item == nil and "Unknown" or item.name)
+    line.stables:SetText(item == nil and self.deadTime or item.stables)
+    line.shadowySupplier:SetText(item == nil and self.deadTime or item.shadowySupplier)
 end
 
 function RepeatableActionTimer:InitializeTimeLines(self)
-    for i = 1, self.system.CharTotal do
-        self:FillLine(self, self.GUI.ListHolder.lines[i], self.GUI.ListHolder.dataLines[i])
+    for i = 1, self.character.total do
+        self:FillLine(self, self.GUI.listHolder.lines[i], self.GUI.listHolder.dataLines[i])
     end
 end
 
 function RepeatableActionTimer:CreateListHolder(self)
-    self.GUI.ListHolder.dataLines = {}
-    self.GUI.ListHolder.lines = {}
+    self.GUI.listHolder.dataLines = {}
+    self.GUI.listHolder.lines = {}
     local predecessor
-    for i = 1, self.system.CharTotal do
-        self.GUI.ListHolder.lines[i] = self:CreateLine(self, i, predecessor, self.GUI.ListHolder)
-        predecessor = self.GUI.ListHolder.lines[i]
+    for i = 1, self.character.total do
+        self.GUI.listHolder.lines[i] = self:CreateLine(self, i, predecessor, self.GUI.listHolder)
+        predecessor = self.GUI.listHolder.lines[i]
     end
     self:Redraw(self)
 end
 
+function RepeatableActionTimer:EventTime(self, timeStamp)
+    if timeStamp == nil then
+        return nil
+    end
+    local elapsed = timeStamp - GetTimeStamp()
+    return elapsed < 0 and nil or ZO_FormatTime(elapsed, TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR)
+end
+
 function RepeatableActionTimer:Redraw(self)
-    --d("Shadowy Supplier: " .. ZO_FormatTime(GetTimeToShadowyConnectionsResetInSeconds(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. " remaining.")
-    --d("Stables: " .. ZO_FormatTime(math.floor(GetTimeUntilCanBeTrained() / 1000), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR) .. " remaining.")
     --[[
     if self.TimeStamp == nil then
         self.TimeStamp = GetTimeStamp()
@@ -285,13 +307,16 @@ function RepeatableActionTimer:Redraw(self)
     d("Window Time:", GetDiffBetweenTimeStamps(GetTimeStamp(), self.TimeStamp))
     ]]
     local dataLines = {}
-    table.insert(dataLines, {
-        Name = self.system.CharName,
-        ShadowySupplier = ZO_FormatTime(GetTimeToShadowyConnectionsResetInSeconds(), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR),
-        Stables = ZO_FormatTime(math.floor(GetTimeUntilCanBeTrained() / 1000), TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR)
-    })
-    self.GUI.ListHolder.dataLines = dataLines
-    self.GUI.ListHolder:SetParent(self.GUI.TopLevel)
+    for i = 1, self.character.total do
+        local _, _, _, _, _, _, characterId = GetCharacterInfo(i)
+        table.insert(dataLines, {
+            name = self.character.names[characterId],
+            shadowySupplier = RepeatableActionTimer:EventTime(self.saveData.timers[characterId] and self.saveData.timers[characterId].shadowySupplier or nil),
+            stables = RepeatableActionTimer:EventTime(self.saveData.timers[characterId] and self.saveData.timers[characterId].stables or nil)
+        })
+    end
+    self.GUI.listHolder.dataLines = dataLines
+    self.GUI.listHolder:SetParent(self.GUI.topLevel)
     self:InitializeTimeLines(self)
 end
 
@@ -300,8 +325,8 @@ function RepeatableActionTimer:ToggleWindow(self)
     if (self.active) then
         self:Redraw(self)
     end
-    if (self.GUI.TopLevel ~= nil) then
-        self.GUI.TopLevel:SetHidden(not self.active)
+    if (self.GUI.topLevel ~= nil) then
+        self.GUI.topLevel:SetHidden(not self.active)
     end
 end
 
@@ -310,8 +335,8 @@ end
 --------------------
 
 function RepeatableActionTimer:OnReticleHidden(self, eventCode, retHidden)
-    if (self.GUI.TopLevel ~= nil) then
-        self.GUI.TopLevel:SetHidden(not (self.active and not retHidden))
+    if (self.GUI.topLevel ~= nil) then
+        self.GUI.topLevel:SetHidden(not self.active or not retHidden)
     end
 end
 
@@ -322,11 +347,13 @@ function RepeatableActionTimer:OnPlayerMove(self, eventCode)
     end
 end
 
+--[[
 function RepeatableActionTimer:OnQuestRemoved(self, eventCode, isCompleted, journalIndex, questName, zoneIndex, poiIndex, questId)
-    --d("GCCID:", GCCId())
-    --d("QuestID:", questId)
-    --d("Completed:", isCompleted)
+    d("GCCID:", GCCId())
+    d("QuestID:", questId)
+    d("Completed:", isCompleted)
 end
+]]
 
 function RepeatableActionTimer:OnUpdate(self)
     self:Redraw(self)
