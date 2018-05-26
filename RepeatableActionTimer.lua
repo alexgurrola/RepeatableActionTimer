@@ -5,7 +5,6 @@
 RepeatableActionTimer = {}
 RepeatableActionTimer.name = "RepeatableActionTimer"
 RepeatableActionTimer.configVersion = 2
-RepeatableActionTimer.deadTime = "--h --m --s"
 RepeatableActionTimer.controls = {}
 RepeatableActionTimer.defaults = {
     shadowySupplier = true,
@@ -20,6 +19,7 @@ RepeatableActionTimer.character = {
 RepeatableActionTimer.GUI = {
     listHolder = nil,
     topLevel = nil,
+    deadTime = "--",
     rowHeight = "24"
 }
 
@@ -53,9 +53,9 @@ function RepeatableActionTimer:Initialize(self)
         SCENE_MANAGER:RegisterTopLevel(RepeatableActionTimer_GUI, false)
         self.GUI.topLevel = RepeatableActionTimer_GUI
         self.GUI.listHolder = RepeatableActionTimer_GUI_ListHolder
-        self.GUI:ClearAnchors()
-        self.GUI:SetAnchor(CENTER, GuiRoot, CENTER, 0, 0)
-        self.GUI:SetHeight(self.GUI:GetHeight() + (self.character.total * self.rowHeight))
+        self.GUI.topLevel:ClearAnchors()
+        self.GUI.topLevel:SetAnchor(CENTER, GuiRoot, CENTER, 0, 0)
+        self.GUI.topLevel:SetHeight(self.GUI.topLevel:GetHeight() + (self.character.total * self.GUI.rowHeight))
         self:CreateListHolder(self)
     else
         d("Unable to initialize Action Timer GUI!")
@@ -159,7 +159,7 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
         name = "Action Timer",
         displayName = "Repeatable Action Timer",
         author = "Positron",
-        version = "0.1",
+        version = "0.2",
         website = "https://github.com/alexgurrola/RepeatableActionTimer",
         slashCommand = "/actiontimer",
         registerForDefaults = true,
@@ -270,8 +270,8 @@ end
 
 function RepeatableActionTimer:FillLine(self, line, item)
     line.name:SetText(item == nil and "Unknown" or item.name)
-    line.stables:SetText(item == nil and self.deadTime or item.stables)
-    line.shadowySupplier:SetText(item == nil and self.deadTime or item.shadowySupplier)
+    line.stables:SetText(item == nil and self.GUI.deadTime or item.stables)
+    line.shadowySupplier:SetText(item == nil and self.GUI.deadTime or item.shadowySupplier)
 end
 
 function RepeatableActionTimer:InitializeTimeLines(self)
@@ -293,10 +293,10 @@ end
 
 function RepeatableActionTimer:EventTime(self, timeStamp)
     if timeStamp == nil then
-        return nil
+        return self.GUI.deadTime
     end
     local elapsed = timeStamp - GetTimeStamp()
-    return elapsed < 0 and nil or ZO_FormatTime(elapsed, TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR)
+    return ZO_FormatTime(elapsed < 0 and 0 or elapsed, TIME_FORMAT_STYLE_COLONS, TIME_FORMAT_PRECISION_TWELVE_HOUR)
 end
 
 function RepeatableActionTimer:Redraw(self)
@@ -311,12 +311,13 @@ function RepeatableActionTimer:Redraw(self)
         local _, _, _, _, _, _, characterId = GetCharacterInfo(i)
         table.insert(dataLines, {
             name = self.character.names[characterId],
-            shadowySupplier = RepeatableActionTimer:EventTime(self.saveData.timers[characterId] and self.saveData.timers[characterId].shadowySupplier or nil),
-            stables = RepeatableActionTimer:EventTime(self.saveData.timers[characterId] and self.saveData.timers[characterId].stables or nil)
+            shadowySupplier = self:EventTime(self, self.saveData.timers[characterId] and self.saveData.timers[characterId].shadowySupplier or nil),
+            stables = self:EventTime(self, self.saveData.timers[characterId] and self.saveData.timers[characterId].stables or nil)
         })
     end
     self.GUI.listHolder.dataLines = dataLines
     self.GUI.listHolder:SetParent(self.GUI.topLevel)
+    d(dataLines)
     self:InitializeTimeLines(self)
 end
 
@@ -335,8 +336,8 @@ end
 --------------------
 
 function RepeatableActionTimer:OnReticleHidden(self, eventCode, retHidden)
-    if (self.GUI.topLevel ~= nil) then
-        self.GUI.topLevel:SetHidden(not self.active or not retHidden)
+    if (self.GUI.topLevel ~= nil and self.active) then
+        self.GUI.topLevel:SetHidden(not retHidden)
     end
 end
 
