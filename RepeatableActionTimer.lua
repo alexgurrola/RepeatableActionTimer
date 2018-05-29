@@ -4,6 +4,7 @@
 
 RepeatableActionTimer = {}
 RepeatableActionTimer.name = "RepeatableActionTimer"
+RepeatableActionTimer.version = "0.2.2"
 RepeatableActionTimer.configVersion = 2
 RepeatableActionTimer.controls = {}
 RepeatableActionTimer.defaults = {
@@ -20,7 +21,8 @@ RepeatableActionTimer.GUI = {
     listHolder = nil,
     topLevel = nil,
     deadTime = "--",
-    rowHeight = "24"
+    rowHeight = "24",
+    highlight = "EsoUI/Art/Miscellaneous/listItem_highlight.dds"
 }
 
 ---------------------
@@ -161,7 +163,7 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
         name = "Action Timer",
         displayName = "Repeatable Action Timer",
         author = "Positron",
-        version = "0.2.1",
+        version = self.version,
         website = "https://github.com/alexgurrola/RepeatableActionTimer",
         slashCommand = "/actiontimer",
         registerForDefaults = true,
@@ -271,6 +273,10 @@ function RepeatableActionTimer:CreateLine(self, i, predecessor, parent)
 end
 
 function RepeatableActionTimer:FillLine(self, line, item)
+    -- highlight current character
+    if self.character.id == item.id then
+        line.SetTexture(self.GUI.highlight)
+    end
     line.name:SetText(item == nil and "Unknown" or item.name)
     line.stables:SetText(item == nil and self.GUI.deadTime or item.stables)
     line.shadowySupplier:SetText(item == nil and self.GUI.deadTime or item.shadowySupplier)
@@ -307,6 +313,7 @@ function RepeatableActionTimer:Redraw(self)
     for i = 1, self.character.total do
         local _, _, _, _, _, _, characterId = GetCharacterInfo(i)
         table.insert(dataLines, {
+            id = characterId,
             name = self.character.names[characterId],
             shadowySupplier = self:EventTime(self, self.saveData.timers[characterId] and self.saveData.timers[characterId].shadowySupplier or nil),
             stables = self:EventTime(self, self.saveData.timers[characterId] and self.saveData.timers[characterId].stables or nil)

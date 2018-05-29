@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.2]
+
+### Added
+
+- Current Character Highlight
+
 ## [0.2.1]
 
 ### Fixed
@@ -29,7 +35,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Donation Button
 - Basic Hooks
 
-[Unreleased]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
-[0.2.1]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
-[0.2.0]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
-[0.1.0]: https://github.com/alexgurrola/RepeatableActionTimer/tree/master
+[Unreleased]: https://github.com/alexgurrola/RepeatableActionTimer/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/alexgurrola/RepeatableActionTimer/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/alexgurrola/RepeatableActionTimer/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/alexgurrola/RepeatableActionTimer/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/alexgurrola/RepeatableActionTimer/tree/v0.1.0
