@@ -251,6 +251,7 @@ end
 function RepeatableActionTimer:CreateLine(self, i, predecessor, parent)
     local row = CreateControlFromVirtual(self.name .. "_Row_", parent, self.name .. "_SlotTemplate", i)
 
+    row.texture = row:GetNamedChild("Bg")
     row.name = row:GetNamedChild("_Name")
     row.stables = row:GetNamedChild("_TimeStables")
     row.shadowySupplier = row:GetNamedChild("_TimeShadowySupplier")
@@ -275,7 +276,8 @@ end
 function RepeatableActionTimer:FillLine(self, line, item)
     -- highlight current character
     if self.character.id == item.id then
-        line.SetTexture(self.GUI.highlight)
+        line.texture:SetTexture(self.GUI.highlight)
+        line.texture:SetColor(92, 176, 252, 1)
     end
     line.name:SetText(item == nil and "Unknown" or item.name)
     line.stables:SetText(item == nil and self.GUI.deadTime or item.stables)
