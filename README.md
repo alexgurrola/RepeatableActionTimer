@@ -8,7 +8,7 @@ This addon keeps track of when a repeatable action can be repeated.
 Usage
 -------
 
-Go into your keybinds and bind a key for <font color="5cb0fc">Action Timer</font>, which will have its font in the same color as you see here.  This will toggle the window to see all the timers for each character.  Initially, it will only show the current character, but, as you log-in to others, it will calibrate their clocks as well.
+Go into your keybinds and bind a key for **Action Timer**, which will have its font in the same color as you see here: ![#5cb0fc](https://placehold.it/15/5cb0fc/000000?text=+).  This will toggle the window to see all the timers for each character.  Initially, it will only show the current character, but, as you log-in to others, it will calibrate their clocks as well.
 
 Actions
 -------
