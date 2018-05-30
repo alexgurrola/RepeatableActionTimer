@@ -8,12 +8,13 @@ This addon keeps track of when a repeatable action can be repeated.
 Usage
 -------
 
-Currently, there isn't a working GUI, so this only gives information in the Chat Window, directly.
+Go into your keybinds and bind a key for <font color="5cb0fc">Action Timer</font>, which will have its font in the same color as you see here.  This will toggle the window to see all the timers for each character.  Initially, it will only show the current character, but, as you log-in to others, it will calibrate their clocks as well.
 
 Actions
 -------
 
 - Shadowy Supplier
+- Stables
 
 Bugs & Requests
 ---------------
