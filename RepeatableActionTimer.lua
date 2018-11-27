@@ -86,7 +86,112 @@ end
 -- Libraries --
 ---------------
 
-local LAM2 = LibStub("LibAddonMenu-2.0")
+local LibAddonMenu2 = LibStub("LibAddonMenu-2.0")
+local LibAwesomeModule = LibStub('LibAwesomeModule-1.0')
+
+--------------------
+-- Awesome Events --
+--------------------
+
+local RepeatableActionEvents = LibAwesomeModule:New(RepeatableActionTimer.name)
+
+-- title: header in settings menu
+RepeatableActionEvents.title = GetString(SI_RATMOD_NAME)
+-- hint: tootltip at module show/hide toggle in settings menu
+RepeatableActionEvents.hint = GetString(SI_RATMOD_HINT)
+-- order: default in the middle order = 40, at bottom ORDER_AWESOME_MODULE_PUSH_NOTIFICATION = 75
+RepeatableActionEvents.order = ORDER_AWESOME_MODULE_PUSH_NOTIFICATION
+-- enable debugging ingame via /aedebug balancing on
+-- disable debugging ingame via /aedebug balancing off
+-- show debugging state ingame via /aedebug balancing
+RepeatableActionEvents.debug = false
+
+-- user settings
+RepeatableActionEvents.options = {
+    showShadowySupplier = {
+        type = 'checkbox',
+        name = GetString(SI_RATMOD_SHADOWY_SUPPLIER),
+        tooltip = GetString(SI_RATMOD_SHADOWY_SUPPLIER_HINT),
+        default = true,
+        order = 1,
+    },
+    showStables = {
+        type = 'checkbox',
+        name = GetString(SI_RATMOD_STABLES),
+        tooltip = GetString(SI_RATMOD_STABLES_HINT),
+        default = true,
+        order = 1,
+    },
+    secondsFadeOut = {
+        type = 'slider',
+        name = GetString(SI_RATMOD_FADE_OUT),
+        tooltip = GetString(SI_RATMOD_FADE_OUT_HINT),
+        min  = 10,
+        max = 120,
+        default = 30,
+        order = 2,
+    },
+}
+
+-- fontSize: default = 1, max = 5
+RepeatableActionEvents.fontSize = 5
+
+-- override enable function
+function RepeatableActionEvents:Enable(options)
+    self:d('Enable')
+    self.data = {
+        secondsFadeOut = options.secondsFadeOut,
+        visible = false
+    }
+end
+
+-- override set function
+function RepeatableActionEvents:Set(key, value)
+    self:d('Set[' .. key .. '] ', value)
+    if (key == 'secondsFadeOut') then
+        self.data.secondsFadeOut = value
+    end
+end
+
+-- handle labels
+function RepeatableActionEvents:Update(options)
+    self:d('Update')
+    local labelText = ''
+    if (self.data.visible) then
+        --[[
+        local actions = ''
+        if (options.showStables) then
+            actions = actions .. ''
+        end
+        ]]
+
+        RepeatableActionTimer:UpdateCharacterTimer()
+
+        local timeMin = 500
+        local timeThreshold = 300
+        local actions = {}
+        local elapsed = nil
+        for characterId, timers in pairs(RepeatableActionTimer.saveData.timers) do
+            for key, value in pairs(timers) do
+                elapsed = value - GetTimeStamp()
+                if (elapsed <= timeThreshold) then
+                    actions[characterId][key] = elapsed
+                end
+                if (elapsed < timeMin) then
+                    timeMin = elapsed
+                end
+            end
+        end
+
+        if (timeMin <= timeThreshold) then
+            local color = (timeMin >= 60) and COLOR_AWEVS_AVAILABLE or COLOR_AWEVS_WARNING
+            local actionString = (timeMin >= 60) and 'Event(s) within 5m!' or 'Event(s) within 1m!'
+            labelText = RepeatableActionEvents.Colorize(color, GetString(SI_RATMOD_NAME)) .. ': ' .. actionString
+        end
+    end
+
+    self.label:SetText(labelText)
+end -- RepeatableActionEvents:Update
 
 --------------------
 -- Internal Tools --
@@ -160,8 +265,8 @@ end
 function RepeatableActionTimer:CreateSettingsWindow(self)
     local panelData = {
         type = "panel",
-        name = "Action Timer",
-        displayName = "Repeatable Action Timer",
+        name = GetString(SI_RATMOD_NAME),
+        displayName = GetString(SI_RATMOD_FULL_NAME),
         author = "Positron",
         version = self.version,
         website = "https://github.com/alexgurrola/RepeatableActionTimer",
@@ -169,7 +274,7 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
         registerForDefaults = true,
     }
     -- local panel =
-    LAM2:RegisterAddonPanel(self.name .. "Config", panelData)
+    LibAddonMenu2:RegisterAddonPanel(self.name .. "Config", panelData)
     local optionsData = {}
     optionsData[#optionsData + 1] = {
         type = "header",
@@ -178,18 +283,20 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
     --[[
     optionsData[#optionsData + 1] = {
         type = "description",
-        text = "This addon keeps track of when a repeatable action can be repeated."
+        text = GetString(SI_RATMOD_HINT)
     }
     ]]
+    --[[
     optionsData[#optionsData + 1] = {
         type = "description",
         text = "This will house settings for toggling specific timers for each character."
     }
+    ]]
     --[[
     optionsData[#optionsData + 1] = {
         type = "checkbox",
-        name = "Stables",
-        tooltip = "Turn this off if you want to stop tracking Shadowy Supplier interactions.",
+        name = GetString(SI_RATMOD_STABLES),
+        tooltip = GetString(SI_RATMOD_STABLES_HINT),
         requiresReload = false,
         default = self.defaults.stables,
         getFunc = function()
@@ -201,8 +308,8 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
     }
     optionsData[#optionsData + 1] = {
         type = "checkbox",
-        name = "Shadowy Supplier",
-        tooltip = "Turn this off if you want to stop tracking Shadowy Supplier interactions.",
+        name = GetString(SI_RATMOD_SHADOWY_SUPPLIER),
+        tooltip = GetString(SI_RATMOD_SHADOWY_SUPPLIER_HINT),
         requiresReload = false,
         default = self.defaults.shadowySupplier,
         getFunc = function()
@@ -241,7 +348,7 @@ function RepeatableActionTimer:CreateSettingsWindow(self)
             MAIL_SEND:Send()
         end,
     }
-    LAM2:RegisterOptionControls(self.name .. "Config", optionsData)
+    LibAddonMenu2:RegisterOptionControls(self.name .. "Config", optionsData)
 end
 
 -------------------

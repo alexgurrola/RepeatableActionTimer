@@ -8,13 +8,12 @@ This addon keeps track of when a repeatable action can be repeated.
 Usage
 -------
 
-Go into your keybinds and bind a key for **Action Timer**, which will have its font in the following color: ![#5cb0fc](https://placehold.it/15/5cb0fc/000000?text=+).  This will toggle the window to see all the timers for each character.  Initially, it will only show the current character, but, as you log-in to others, it will calibrate their clocks as well.
+Currently, there isn't a working GUI, so this only gives information in the Chat Window, directly.
 
 Actions
 -------
 
 - Shadowy Supplier
-- Stables
 
 Bugs & Requests
 ---------------
