@@ -4,7 +4,7 @@
 
 RepeatableActionTimer = {}
 RepeatableActionTimer.name = "RepeatableActionTimer"
-RepeatableActionTimer.version = "0.2.2"
+RepeatableActionTimer.version = "0.3.0"
 RepeatableActionTimer.configVersion = 2
 RepeatableActionTimer.controls = {}
 RepeatableActionTimer.defaults = {
